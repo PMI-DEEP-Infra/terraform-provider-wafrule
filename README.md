@@ -1,5 +1,4 @@
 ## Terraform AWS Firewall Manager WAF rules provider
-# terraform-provider-wafrule
 
 # Terraform Provider for adding WAF rule to ACL created by AWS Firewall Manager
 
