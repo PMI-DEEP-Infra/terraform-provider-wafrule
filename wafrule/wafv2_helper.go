@@ -7,43 +7,6 @@ import (
 	"github.com/terraform-providers/terraform-provider-wafrule/wafrule/internal/flex"
 )
 
-func expandRules(l []interface{}) []*wafv2.Rule {
-	if len(l) == 0 || l[0] == nil {
-		return nil
-	}
-
-	rules := make([]*wafv2.Rule, 0)
-
-	for _, rule := range l {
-		if rule == nil {
-			continue
-		}
-		rules = append(rules, expandRule(rule.(map[string]interface{})))
-	}
-
-	return rules
-}
-
-func expandRule(m map[string]interface{}) *wafv2.Rule {
-	if m == nil {
-		return nil
-	}
-
-	rule := &wafv2.Rule{
-		Name:             aws.String(m["name"].(string)),
-		Priority:         aws.Int64(int64(m["priority"].(int))),
-		Action:           expandRuleAction(m["action"].([]interface{})),
-		Statement:        expandRootStatement(m["statement"].([]interface{})),
-		VisibilityConfig: expandVisibilityConfig(m["visibility_config"].([]interface{})),
-	}
-
-	if v, ok := m["rule_label"].(*schema.Set); ok && v.Len() > 0 {
-		rule.RuleLabels = expandRuleLabels(v.List())
-	}
-
-	return rule
-}
-
 func expandRuleLabels(l []interface{}) []*wafv2.Label {
 	if len(l) == 0 || l[0] == nil {
 		return nil
@@ -167,25 +130,6 @@ func expandCountAction(l []interface{}) *wafv2.CountAction {
 	return action
 }
 
-func expandCustomResponseBodies(m []interface{}) map[string]*wafv2.CustomResponseBody {
-	if len(m) == 0 {
-		return nil
-	}
-
-	customResponseBodies := make(map[string]*wafv2.CustomResponseBody, len(m))
-
-	for _, v := range m {
-		vm := v.(map[string]interface{})
-		key := vm["key"].(string)
-		customResponseBodies[key] = &wafv2.CustomResponseBody{
-			Content:     aws.String(vm["content"].(string)),
-			ContentType: aws.String(vm["content_type"].(string)),
-		}
-	}
-
-	return customResponseBodies
-}
-
 func expandCustomResponse(l []interface{}) *wafv2.CustomResponse {
 	if len(l) == 0 || l[0] == nil {
 		return nil
@@ -269,16 +213,6 @@ func expandVisibilityConfig(l []interface{}) *wafv2.VisibilityConfig {
 	}
 
 	return configuration
-}
-
-func expandRootStatement(l []interface{}) *wafv2.Statement {
-	if len(l) == 0 || l[0] == nil {
-		return nil
-	}
-
-	m := l[0].(map[string]interface{})
-
-	return expandStatement(m)
 }
 
 func expandStatements(l []interface{}) []*wafv2.Statement {
@@ -737,22 +671,6 @@ func expandXSSMatchStatement(l []interface{}) *wafv2.XssMatchStatement {
 	}
 }
 
-func flattenRules(r []*wafv2.Rule) interface{} {
-	out := make([]map[string]interface{}, len(r))
-	for i, rule := range r {
-		m := make(map[string]interface{})
-		m["action"] = flattenRuleAction(rule.Action)
-		m["name"] = aws.StringValue(rule.Name)
-		m["priority"] = int(aws.Int64Value(rule.Priority))
-		m["rule_label"] = flattenRuleLabels(rule.RuleLabels)
-		m["statement"] = flattenRootStatement(rule.Statement)
-		m["visibility_config"] = flattenVisibilityConfig(rule.VisibilityConfig)
-		out[i] = m
-	}
-
-	return out
-}
-
 func flattenRuleAction(a *wafv2.RuleAction) interface{} {
 	if a == nil {
 		return []interface{}{}
@@ -833,25 +751,6 @@ func flattenCount(a *wafv2.CountAction) []interface{} {
 	return []interface{}{m}
 }
 
-func flattenCustomResponseBodies(b map[string]*wafv2.CustomResponseBody) interface{} {
-	if len(b) == 0 {
-		return make([]map[string]interface{}, 0)
-	}
-
-	out := make([]map[string]interface{}, len(b))
-	i := 0
-	for key, body := range b {
-		out[i] = map[string]interface{}{
-			"key":          key,
-			"content":      aws.StringValue(body.Content),
-			"content_type": aws.StringValue(body.ContentType),
-		}
-		i += 1
-	}
-
-	return out
-}
-
 func flattenCustomRequestHandling(c *wafv2.CustomRequestHandling) []interface{} {
 	if c == nil {
 		return []interface{}{}
@@ -916,14 +815,6 @@ func flattenRuleLabels(l []*wafv2.Label) []interface{} {
 	}
 
 	return out
-}
-
-func flattenRootStatement(s *wafv2.Statement) interface{} {
-	if s == nil {
-		return []interface{}{}
-	}
-
-	return []interface{}{flattenStatement(s)}
 }
 
 func flattenStatements(s []*wafv2.Statement) interface{} {

@@ -21,18 +21,6 @@ func emptySchema() *schema.Schema {
 	}
 }
 
-func emptySchemaDeprecated() *schema.Schema {
-	return &schema.Schema{
-		Type:     schema.TypeList,
-		Optional: true,
-		MaxItems: 1,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{},
-		},
-		Deprecated: "Not supported by WAFv2 API",
-	}
-}
-
 func ruleLabelsSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeSet,
@@ -47,29 +35,6 @@ func ruleLabelsSchema() *schema.Schema {
 						validation.StringMatch(regexp.MustCompile(`^[0-9A-Za-z_\-:]+$`), "must contain only alphanumeric, underscore, hyphen, and colon characters"),
 					),
 				},
-			},
-		},
-	}
-}
-
-func rootStatementSchema(level int) *schema.Schema {
-	return &schema.Schema{
-		Type:     schema.TypeList,
-		Required: true,
-		MaxItems: 1,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				"and_statement":                         statementSchema(level - 1),
-				"byte_match_statement":                  byteMatchStatementSchema(),
-				"geo_match_statement":                   geoMatchStatementSchema(),
-				"ip_set_reference_statement":            ipSetReferenceStatementSchema(),
-				"label_match_statement":                 labelMatchStatementSchema(),
-				"not_statement":                         statementSchema(level - 1),
-				"or_statement":                          statementSchema(level - 1),
-				"regex_pattern_set_reference_statement": regexPatternSetReferenceStatementSchema(),
-				"size_constraint_statement":             sizeConstraintSchema(),
-				"sqli_match_statement":                  sqliMatchStatementSchema(),
-				"xss_match_statement":                   xssMatchStatementSchema(),
 			},
 		},
 	}
@@ -694,35 +659,6 @@ func customResponseSchema() *schema.Schema {
 							},
 						},
 					},
-				},
-			},
-		},
-	}
-}
-
-func customResponseBodySchema() *schema.Schema {
-	return &schema.Schema{
-		Type:     schema.TypeSet,
-		Optional: true,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				"key": {
-					Type:     schema.TypeString,
-					Required: true,
-					ValidateFunc: validation.All(
-						validation.StringLenBetween(1, 128),
-						validation.StringMatch(regexp.MustCompile(`^[\w\-]+$`), "must contain only alphanumeric, hyphen, and underscore characters"),
-					),
-				},
-				"content": {
-					Type:         schema.TypeString,
-					Required:     true,
-					ValidateFunc: validation.StringLenBetween(1, 10240),
-				},
-				"content_type": {
-					Type:         schema.TypeString,
-					Required:     true,
-					ValidateFunc: validation.StringInSlice(wafv2.ResponseContentType_Values(), false),
 				},
 			},
 		},

@@ -42,10 +42,6 @@ func jsonBytesEqual(b1, b2 []byte) bool {
 	return reflect.DeepEqual(o1, o2)
 }
 
-func isResourceNotFoundError(err error) bool {
-	return tfresource.NotFound(err)
-}
-
 func isResourceTimeoutError(err error) bool {
 	return tfresource.TimedOut(err)
 }
