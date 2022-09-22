@@ -1,50 +1,50 @@
 package wafrule
 
 import (
-  "reflect"
-  "testing"
+	"reflect"
+	"testing"
 
-  "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws"
 )
 
 func TestExpandStringList(t *testing.T) {
-  expanded := []interface{}{"us-east-1a", "us-east-1b"} //lintignore:AWSAT003
-  stringList := expandStringList(expanded)
-  expected := []*string{
-    aws.String("us-east-1a"), //lintignore:AWSAT003
-    aws.String("us-east-1b"), //lintignore:AWSAT003
-  }
+	expanded := []interface{}{"us-east-1a", "us-east-1b"} //lintignore:AWSAT003
+	stringList := expandStringList(expanded)
+	expected := []*string{
+		aws.String("us-east-1a"), //lintignore:AWSAT003
+		aws.String("us-east-1b"), //lintignore:AWSAT003
+	}
 
-  if !reflect.DeepEqual(stringList, expected) {
-    t.Fatalf(
-      "Got:\n\n%#v\n\nExpected:\n\n%#v\n",
-      stringList,
-      expected)
-  }
+	if !reflect.DeepEqual(stringList, expected) {
+		t.Fatalf(
+			"Got:\n\n%#v\n\nExpected:\n\n%#v\n",
+			stringList,
+			expected)
+	}
 }
 
 func TestExpandStringListEmptyItems(t *testing.T) {
-  expanded := []interface{}{"foo", "bar", "", "baz"}
-  stringList := expandStringList(expanded)
-  expected := []*string{
-    aws.String("foo"),
-    aws.String("bar"),
-    aws.String("baz"),
-  }
+	expanded := []interface{}{"foo", "bar", "", "baz"}
+	stringList := expandStringList(expanded)
+	expected := []*string{
+		aws.String("foo"),
+		aws.String("bar"),
+		aws.String("baz"),
+	}
 
-  if !reflect.DeepEqual(stringList, expected) {
-    t.Fatalf(
-      "Got:\n\n%#v\n\nExpected:\n\n%#v\n",
-      stringList,
-      expected)
-  }
+	if !reflect.DeepEqual(stringList, expected) {
+		t.Fatalf(
+			"Got:\n\n%#v\n\nExpected:\n\n%#v\n",
+			stringList,
+			expected)
+	}
 }
 
 func TestCheckYamlString(t *testing.T) {
-  var err error
-  var actual string
+	var err error
+	var actual string
 
-  validYaml := `---
+	validYaml := `---
 abc:
   def: 123
   xyz:
@@ -53,49 +53,49 @@ abc:
       b: "1"
 `
 
-  actual, err = checkYamlString(validYaml)
-  if err != nil {
-    t.Fatalf("Expected not to throw an error while parsing YAML, but got: %s", err)
-  }
+	actual, err = checkYamlString(validYaml)
+	if err != nil {
+		t.Fatalf("Expected not to throw an error while parsing YAML, but got: %s", err)
+	}
 
-  // We expect the same YAML string back
-  if actual != validYaml {
-    t.Fatalf("Got:\n\n%s\n\nExpected:\n\n%s\n", actual, validYaml)
-  }
+	// We expect the same YAML string back
+	if actual != validYaml {
+		t.Fatalf("Got:\n\n%s\n\nExpected:\n\n%s\n", actual, validYaml)
+	}
 
-  invalidYaml := `abc: [`
+	invalidYaml := `abc: [`
 
-  actual, err = checkYamlString(invalidYaml)
-  if err == nil {
-    t.Fatalf("Expected to throw an error while parsing YAML, but got: %s", err)
-  }
+	actual, err = checkYamlString(invalidYaml)
+	if err == nil {
+		t.Fatalf("Expected to throw an error while parsing YAML, but got: %s", err)
+	}
 
-  // We expect the invalid YAML to be shown back to us again.
-  if actual != invalidYaml {
-    t.Fatalf("Got:\n\n%s\n\nExpected:\n\n%s\n", actual, invalidYaml)
-  }
+	// We expect the invalid YAML to be shown back to us again.
+	if actual != invalidYaml {
+		t.Fatalf("Got:\n\n%s\n\nExpected:\n\n%s\n", actual, invalidYaml)
+	}
 }
 
 func TestNormalizeJsonOrYamlString(t *testing.T) {
-  var err error
-  var actual string
+	var err error
+	var actual string
 
-  validNormalizedJson := `{"abc":"1"}`
-  actual, err = normalizeJsonOrYamlString(validNormalizedJson)
-  if err != nil {
-    t.Fatalf("Expected not to throw an error while parsing template, but got: %s", err)
-  }
-  if actual != validNormalizedJson {
-    t.Fatalf("Got:\n\n%s\n\nExpected:\n\n%s\n", actual, validNormalizedJson)
-  }
+	validNormalizedJson := `{"abc":"1"}`
+	actual, err = normalizeJsonOrYamlString(validNormalizedJson)
+	if err != nil {
+		t.Fatalf("Expected not to throw an error while parsing template, but got: %s", err)
+	}
+	if actual != validNormalizedJson {
+		t.Fatalf("Got:\n\n%s\n\nExpected:\n\n%s\n", actual, validNormalizedJson)
+	}
 
-  validNormalizedYaml := `abc: 1
+	validNormalizedYaml := `abc: 1
 `
-  actual, err = normalizeJsonOrYamlString(validNormalizedYaml)
-  if err != nil {
-    t.Fatalf("Expected not to throw an error while parsing template, but got: %s", err)
-  }
-  if actual != validNormalizedYaml {
-    t.Fatalf("Got:\n\n%s\n\nExpected:\n\n%s\n", actual, validNormalizedYaml)
-  }
+	actual, err = normalizeJsonOrYamlString(validNormalizedYaml)
+	if err != nil {
+		t.Fatalf("Expected not to throw an error while parsing template, but got: %s", err)
+	}
+	if actual != validNormalizedYaml {
+		t.Fatalf("Got:\n\n%s\n\nExpected:\n\n%s\n", actual, validNormalizedYaml)
+	}
 }

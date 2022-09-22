@@ -1,10 +1,12 @@
-package wafrule
+package verify
 
-import "testing"
+import (
+	"testing"
+)
 
-func TestValidateArn(t *testing.T) {
+func TestValidARN(t *testing.T) {
 	v := ""
-	_, errors := validateArn(v, "arn")
+	_, errors := ValidARN(v, "arn")
 	if len(errors) != 0 {
 		t.Fatalf("%q should not be validated as an ARN: %q", v, errors)
 	}
@@ -28,7 +30,7 @@ func TestValidateArn(t *testing.T) {
 		"arn:aws-us-gov:s3:::bucket/object",                                                // lintignore:AWSAT005          // GovCloud S3 ARN
 	}
 	for _, v := range validNames {
-		_, errors := validateArn(v, "arn")
+		_, errors := ValidARN(v, "arn")
 		if len(errors) != 0 {
 			t.Fatalf("%q should be a valid ARN: %q", v, errors)
 		}
@@ -42,30 +44,9 @@ func TestValidateArn(t *testing.T) {
 		"arn:aws:logs:region:*:*", //lintignore:AWSAT005
 	}
 	for _, v := range invalidNames {
-		_, errors := validateArn(v, "arn")
+		_, errors := ValidARN(v, "arn")
 		if len(errors) == 0 {
 			t.Fatalf("%q should be an invalid ARN", v)
-		}
-	}
-}
-
-func TestCidrBlocksEqual(t *testing.T) {
-	for _, ts := range []struct {
-		cidr1 string
-		cidr2 string
-		equal bool
-	}{
-		{"10.2.2.0/24", "10.2.2.0/24", true},
-		{"10.2.2.0/1234", "10.2.2.0/24", false},
-		{"10.2.2.0/24", "10.2.2.0/1234", false},
-		{"2001::/15", "2001::/15", true},
-		{"::/0", "2001::/15", false},
-		{"::/0", "::0/0", true},
-		{"", "", false},
-	} {
-		equal := cidrBlocksEqual(ts.cidr1, ts.cidr2)
-		if ts.equal != equal {
-			t.Fatalf("cidrBlocksEqual(%q, %q) should be: %t", ts.cidr1, ts.cidr2, ts.equal)
 		}
 	}
 }
