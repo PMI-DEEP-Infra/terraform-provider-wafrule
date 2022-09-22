@@ -17,7 +17,6 @@ func ExpandStringList(configured []interface{}) []*string {
 	return vs
 }
 
-
 // Takes list of pointers to strings. Expand to an array
 // of raw strings and returns a []interface{}
 // to keep compatibility w/ schema.NewSetschema.NewSet

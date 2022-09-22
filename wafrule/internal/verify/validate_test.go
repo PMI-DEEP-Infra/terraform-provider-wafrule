@@ -4,7 +4,6 @@ import (
 	"testing"
 )
 
-
 func TestValidARN(t *testing.T) {
 	v := ""
 	_, errors := ValidARN(v, "arn")

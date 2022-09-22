@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/wafv2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-  "github.com/terraform-providers/terraform-provider-wafrule/wafrule/internal/verify"
+	"github.com/terraform-providers/terraform-provider-wafrule/wafrule/internal/verify"
 )
 
 func emptySchema() *schema.Schema {
@@ -334,7 +334,7 @@ func fieldToMatchBaseSchema() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
 			"all_query_arguments": emptySchema(),
-			"body":    bodySchema(),
+			"body":                bodySchema(),
 			"cookies": {
 				Type:     schema.TypeList,
 				Optional: true,

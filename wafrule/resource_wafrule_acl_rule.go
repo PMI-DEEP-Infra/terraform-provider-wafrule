@@ -1,258 +1,252 @@
 package wafrule
 
 import (
-  "fmt"
-  "log"
-  "regexp"
-  "time"
+	"fmt"
+	"log"
+	"regexp"
+	"time"
 
-  "github.com/aws/aws-sdk-go/aws"
-  "github.com/aws/aws-sdk-go/service/wafv2"
-  "github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/tfawserr"
-  "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-  "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-  "github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-  "github.com/terraform-providers/terraform-provider-wafrule/wafrule/internal/verify"
-  "github.com/terraform-providers/terraform-provider-wafrule/wafrule/internal/tfresource"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/wafv2"
+	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/tfawserr"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/terraform-providers/terraform-provider-wafrule/wafrule/internal/tfresource"
+	"github.com/terraform-providers/terraform-provider-wafrule/wafrule/internal/verify"
 )
 
 const (
-  webACLCreateTimeout = 5 * time.Minute
-  webACLUpdateTimeout = 5 * time.Minute
-  webACLDeleteTimeout = 5 * time.Minute
-  Scope                    = "REGIONAL"
-  webACLRootStatementSchemaLevel = 3
+	webACLCreateTimeout            = 5 * time.Minute
+	webACLUpdateTimeout            = 5 * time.Minute
+	webACLDeleteTimeout            = 5 * time.Minute
+	Scope                          = "REGIONAL"
+	webACLRootStatementSchemaLevel = 3
 )
 
-
 func resourceAwsWafv2Rules() *schema.Resource {
-  return &schema.Resource{
-    Create: resourceWebAclRulesCreate,
-    Read:   resourceWebACLRulesRead,
-    Update: resourceWebACLRulesUpdate,
-    Delete: resourceWebACLRulesDelete,
+	return &schema.Resource{
+		Create: resourceWebAclRulesCreate,
+		Read:   resourceWebACLRulesRead,
+		Update: resourceWebACLRulesUpdate,
+		Delete: resourceWebACLRulesDelete,
 
-
-    Schema: map[string]*schema.Schema{
-            "waf_acl_name": {
-                Type:     schema.TypeString,
-                Required: true,
-                ForceNew: true,
-                ValidateFunc: validation.All(
-                    validation.StringLenBetween(1, 128),
-                    validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9-_]+$`), "must contain only alphanumeric hyphen and underscore characters"),
-                ),
-            },
-            "waf_acl_id": {
-                Type:     schema.TypeString,
-                Required: true,
-                ForceNew: true,
-                ValidateFunc: validation.All(
-                    validation.StringLenBetween(1, 128),
-                    validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9-_]+$`), "must contain only alphanumeric hyphen and underscore characters"),
-                ),
-            },
-            "lock_token": {
-              Type: schema.TypeString,
-              Computed: true,
-            },
-            "waf_acl_default_action": {
-      				Type:     schema.TypeList,
-              Computed: true,
-      				Elem: &schema.Resource{
-      					Schema: map[string]*schema.Schema{
-      						"allow": allowConfigSchema(),
-      						"block": blockConfigSchema(),
-      					},
-      				},
-      			},
-            "waf_acl_visibility_config": {
-      				Type:     schema.TypeList,
-              Computed: true,
-              Elem: &schema.Resource{
-          			Schema: map[string]*schema.Schema{
-          				"cloudwatch_metrics_enabled": {
-          					Type:     schema.TypeBool,
-          					Required: true,
-          				},
-          				"metric_name": {
-          					Type:     schema.TypeString,
-          					Required: true,
-          					ValidateFunc: validation.All(
-          						validation.StringLenBetween(1, 128),
-          						validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9-_]+$`), "must contain only alphanumeric hyphen and underscore characters"),
-          					),
-          				},
-          				"sampled_requests_enabled": {
-          					Type:     schema.TypeBool,
-          					Required: true,
-          				},
-          			},
-          		},
-      			},
-            "rule": {
-                Type:     schema.TypeSet,
-                Required: true,
-                Elem: &schema.Resource{
-                    Schema: map[string]*schema.Schema{
-                        "action": {
-                            Type:     schema.TypeList,
-                            Optional: true,
-                            MaxItems: 1,
-                            Elem: &schema.Resource{
-                              Schema: map[string]*schema.Schema{
-              									"allow":   allowConfigSchema(),
-              									"block":   blockConfigSchema(),
-              									"captcha": captchaConfigSchema(),
-              									"count":   countConfigSchema(),
-              								},
-                            },
-                        },
-                        "name": {
-                            Type:         schema.TypeString,
-                            Required:     true,
-                            ValidateFunc: validation.StringLenBetween(1, 128),
-                        },
-                        "override_action": {
-            							Type:     schema.TypeList,
-            							Optional: true,
-            							MaxItems: 1,
-            							Elem: &schema.Resource{
-            								Schema: map[string]*schema.Schema{
-            									"count": emptySchema(),
-            									"none":  emptySchema(),
-            								},
-            							},
-            						},
-                        "priority": {
-                            Type:     schema.TypeInt,
-                            Required: true,
-                        },
-                        "rule_label":        ruleLabelsSchema(),
-                        "statement":         webACLRootStatementSchema(webACLRootStatementSchemaLevel),
-                        "visibility_config": visibilityConfigSchema(),
-                    },
-                },
-            },
-        },
-  }
+		Schema: map[string]*schema.Schema{
+			"waf_acl_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				ValidateFunc: validation.All(
+					validation.StringLenBetween(1, 128),
+					validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9-_]+$`), "must contain only alphanumeric hyphen and underscore characters"),
+				),
+			},
+			"waf_acl_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				ValidateFunc: validation.All(
+					validation.StringLenBetween(1, 128),
+					validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9-_]+$`), "must contain only alphanumeric hyphen and underscore characters"),
+				),
+			},
+			"lock_token": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"waf_acl_default_action": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"allow": allowConfigSchema(),
+						"block": blockConfigSchema(),
+					},
+				},
+			},
+			"waf_acl_visibility_config": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cloudwatch_metrics_enabled": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+						"metric_name": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validation.All(
+								validation.StringLenBetween(1, 128),
+								validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9-_]+$`), "must contain only alphanumeric hyphen and underscore characters"),
+							),
+						},
+						"sampled_requests_enabled": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+					},
+				},
+			},
+			"rule": {
+				Type:     schema.TypeSet,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"action": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"allow":   allowConfigSchema(),
+									"block":   blockConfigSchema(),
+									"captcha": captchaConfigSchema(),
+									"count":   countConfigSchema(),
+								},
+							},
+						},
+						"name": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringLenBetween(1, 128),
+						},
+						"override_action": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"count": emptySchema(),
+									"none":  emptySchema(),
+								},
+							},
+						},
+						"priority": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"rule_label":        ruleLabelsSchema(),
+						"statement":         webACLRootStatementSchema(webACLRootStatementSchemaLevel),
+						"visibility_config": visibilityConfigSchema(),
+					},
+				},
+			},
+		},
+	}
 }
 
 func resourceWebAclRulesCreate(d *schema.ResourceData, meta interface{}) error {
-  var resp *wafv2.UpdateWebACLOutput
-  conn := meta.(*AWSClient).wafv2conn
+	var resp *wafv2.UpdateWebACLOutput
+	conn := meta.(*AWSClient).wafv2conn
 
-  wafAclInfo := &wafv2.GetWebACLInput{
-      Id:    aws.String(d.Get("waf_acl_id").(string)),
-      Name:  aws.String(d.Get("waf_acl_name").(string)),
-      Scope: aws.String(Scope),
-  }
-  webAcl, getAclError := resourceWebACLReadExistinAcl(wafAclInfo, meta)
-  if getAclError != nil {
-    return getAclError
-  }
+	wafAclInfo := &wafv2.GetWebACLInput{
+		Id:    aws.String(d.Get("waf_acl_id").(string)),
+		Name:  aws.String(d.Get("waf_acl_name").(string)),
+		Scope: aws.String(Scope),
+	}
+	webAcl, getAclError := resourceWebACLReadExistinAcl(wafAclInfo, meta)
+	if getAclError != nil {
+		return getAclError
+	}
 
-  params := &wafv2.UpdateWebACLInput{
-    Id:               aws.String(d.Get("waf_acl_id").(string)),
-    Name:             aws.String(d.Get("waf_acl_name").(string)),
-    Scope:            aws.String(Scope),
-    Rules:            expandWebACLRules(d.Get("rule").(*schema.Set).List()),
-    VisibilityConfig: webAcl.WebACL.VisibilityConfig,
-    DefaultAction:    webAcl.WebACL.DefaultAction,
-    LockToken:        webAcl.LockToken,
+	params := &wafv2.UpdateWebACLInput{
+		Id:               aws.String(d.Get("waf_acl_id").(string)),
+		Name:             aws.String(d.Get("waf_acl_name").(string)),
+		Scope:            aws.String(Scope),
+		Rules:            expandWebACLRules(d.Get("rule").(*schema.Set).List()),
+		VisibilityConfig: webAcl.WebACL.VisibilityConfig,
+		DefaultAction:    webAcl.WebACL.DefaultAction,
+		LockToken:        webAcl.LockToken,
+	}
 
-  }
+	if v, ok := d.GetOk("description"); ok {
+		params.Description = aws.String(v.(string))
+	}
 
-  if v, ok := d.GetOk("description"); ok {
-    params.Description = aws.String(v.(string))
-  }
+	err := resource.Retry(webACLCreateTimeout, func() *resource.RetryError {
+		var err error
+		resp, err = conn.UpdateWebACL(params)
+		if err != nil {
+			if isAWSErr(err, wafv2.ErrCodeWAFUnavailableEntityException, "") {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 
+	if isResourceTimeoutError(err) {
+		_, err = conn.UpdateWebACL(params)
+	}
 
-  err := resource.Retry(webACLCreateTimeout, func() *resource.RetryError {
-    var err error
-    resp, err = conn.UpdateWebACL(params)
-    if err != nil {
-      if isAWSErr(err, wafv2.ErrCodeWAFUnavailableEntityException, "") {
-        return resource.RetryableError(err)
-      }
-      return resource.NonRetryableError(err)
-    }
-    return nil
-  })
+	if err != nil {
+		return fmt.Errorf("Error creating WAFv2 Rules: %w", err)
+	}
 
-  if isResourceTimeoutError(err) {
-    _, err = conn.UpdateWebACL(params)
-  }
+	if resp == nil || resp.NextLockToken == nil {
+		return fmt.Errorf("Error creating WAFv2 Rules")
+	}
 
-  if err != nil {
-    return fmt.Errorf("Error creating WAFv2 Rules: %w", err)
-  }
+	d.SetId(resource.PrefixedUniqueId(fmt.Sprintf("%s-", d.Get("waf_acl_name").(string))))
 
-  if resp == nil || resp.NextLockToken == nil {
-    return fmt.Errorf("Error creating WAFv2 Rules")
-  }
-
-  d.SetId(resource.PrefixedUniqueId(fmt.Sprintf("%s-", d.Get("waf_acl_name").(string))))
-
-  return resourceWebACLRulesRead(d, meta)
+	return resourceWebACLRulesRead(d, meta)
 }
-
 
 func resourceWebACLRulesRead(d *schema.ResourceData, meta interface{}) error {
-  conn := meta.(*AWSClient).wafv2conn
+	conn := meta.(*AWSClient).wafv2conn
 
-  params := &wafv2.GetWebACLInput{
-    Id:    aws.String(d.Get("waf_acl_id").(string)),
-    Name:  aws.String(d.Get("waf_acl_name").(string)),
-    Scope: aws.String(Scope),
-  }
+	params := &wafv2.GetWebACLInput{
+		Id:    aws.String(d.Get("waf_acl_id").(string)),
+		Name:  aws.String(d.Get("waf_acl_name").(string)),
+		Scope: aws.String(Scope),
+	}
 
-  resp, err := conn.GetWebACL(params)
-  if err != nil {
-    if isAWSErr(err, wafv2.ErrCodeWAFNonexistentItemException, "") {
-      log.Printf("[WARN] WAFv2 WebACL (%s) not found for rule", d.Id())
-      return err
-    }
-    return err
-  }
+	resp, err := conn.GetWebACL(params)
+	if err != nil {
+		if isAWSErr(err, wafv2.ErrCodeWAFNonexistentItemException, "") {
+			log.Printf("[WARN] WAFv2 WebACL (%s) not found for rule", d.Id())
+			return err
+		}
+		return err
+	}
 
-  if resp == nil || resp.WebACL == nil {
-    return fmt.Errorf("Error getting WAFv2 WebACL Rule")
-  }
+	if resp == nil || resp.WebACL == nil {
+		return fmt.Errorf("Error getting WAFv2 WebACL Rule")
+	}
 
-  d.Set("lock_token", resp.LockToken)
+	d.Set("lock_token", resp.LockToken)
 
-  if err := d.Set("waf_acl_default_action", flattenDefaultAction(resp.WebACL.DefaultAction)); err != nil {
-    return fmt.Errorf("Error setting default_action: %w", err)
-  }
+	if err := d.Set("waf_acl_default_action", flattenDefaultAction(resp.WebACL.DefaultAction)); err != nil {
+		return fmt.Errorf("Error setting default_action: %w", err)
+	}
 
-  if err := d.Set("waf_acl_visibility_config", flattenVisibilityConfig(resp.WebACL.VisibilityConfig)); err != nil {
-    return fmt.Errorf("Error setting visibility_config: %w", err)
-  }
+	if err := d.Set("waf_acl_visibility_config", flattenVisibilityConfig(resp.WebACL.VisibilityConfig)); err != nil {
+		return fmt.Errorf("Error setting visibility_config: %w", err)
+	}
 
-  if err := d.Set("rule", flattenWebACLRules(resp.WebACL.Rules)); err != nil {
-    return fmt.Errorf("Error setting rule: %w", err)
-  }
+	if err := d.Set("rule", flattenWebACLRules(resp.WebACL.Rules)); err != nil {
+		return fmt.Errorf("Error setting rule: %w", err)
+	}
 
-  return nil
+	return nil
 }
 
-
 func resourceWebACLRulesUpdate(d *schema.ResourceData, meta interface{}) error {
-  conn := meta.(*AWSClient).wafv2conn
+	conn := meta.(*AWSClient).wafv2conn
 
-  if d.HasChanges("rule") {
-    u := &wafv2.UpdateWebACLInput{
-      Id:               aws.String(d.Get("waf_acl_id").(string)),
-      Name:             aws.String(d.Get("waf_acl_name").(string)),
-      Scope:            aws.String(Scope),
-      LockToken:        aws.String(d.Get("lock_token").(string)),
-      DefaultAction:    expandDefaultAction(d.Get("waf_acl_default_action").([]interface{})),
-      Rules:            expandWebACLRules(d.Get("rule").(*schema.Set).List()),
-      VisibilityConfig: expandVisibilityConfig(d.Get("waf_acl_visibility_config").([]interface{})),
-    }
+	if d.HasChanges("rule") {
+		u := &wafv2.UpdateWebACLInput{
+			Id:               aws.String(d.Get("waf_acl_id").(string)),
+			Name:             aws.String(d.Get("waf_acl_name").(string)),
+			Scope:            aws.String(Scope),
+			LockToken:        aws.String(d.Get("lock_token").(string)),
+			DefaultAction:    expandDefaultAction(d.Get("waf_acl_default_action").([]interface{})),
+			Rules:            expandWebACLRules(d.Get("rule").(*schema.Set).List()),
+			VisibilityConfig: expandVisibilityConfig(d.Get("waf_acl_visibility_config").([]interface{})),
+		}
 
-    err := resource.Retry(webACLUpdateTimeout, func() *resource.RetryError {
+		err := resource.Retry(webACLUpdateTimeout, func() *resource.RetryError {
 			_, err := conn.UpdateWebACL(u)
 			if err != nil {
 				if tfawserr.ErrCodeEquals(err, wafv2.ErrCodeWAFUnavailableEntityException) {
@@ -273,50 +267,50 @@ func resourceWebACLRulesUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return fmt.Errorf("Error updating WAFv2 WebACL: %w", err)
 		}
-  }
+	}
 
-  return resourceWebACLRulesRead(d, meta)
+	return resourceWebACLRulesRead(d, meta)
 }
 
 func resourceWebACLRulesDelete(d *schema.ResourceData, meta interface{}) error {
-  conn := meta.(*AWSClient).wafv2conn
+	conn := meta.(*AWSClient).wafv2conn
 
-  log.Printf("[INFO] Deleting WAFv2 WebACL Rule for %s", d.Id())
+	log.Printf("[INFO] Deleting WAFv2 WebACL Rule for %s", d.Id())
 
-  r := &wafv2.UpdateWebACLInput{
-    Id:               aws.String(d.Get("waf_acl_id").(string)),
-    Name:             aws.String(d.Get("waf_acl_name").(string)),
-    Scope:            aws.String(Scope),
-    LockToken:        aws.String(d.Get("lock_token").(string)),
-    DefaultAction:    expandDefaultAction(d.Get("waf_acl_default_action").([]interface{})),
-    Rules:            make([]*wafv2.Rule, 0),
-    VisibilityConfig: expandVisibilityConfig(d.Get("waf_acl_visibility_config").([]interface{})),
-  }
+	r := &wafv2.UpdateWebACLInput{
+		Id:               aws.String(d.Get("waf_acl_id").(string)),
+		Name:             aws.String(d.Get("waf_acl_name").(string)),
+		Scope:            aws.String(Scope),
+		LockToken:        aws.String(d.Get("lock_token").(string)),
+		DefaultAction:    expandDefaultAction(d.Get("waf_acl_default_action").([]interface{})),
+		Rules:            make([]*wafv2.Rule, 0),
+		VisibilityConfig: expandVisibilityConfig(d.Get("waf_acl_visibility_config").([]interface{})),
+	}
 
-  err := resource.Retry(webACLUpdateTimeout, func() *resource.RetryError {
-    _, err := conn.UpdateWebACL(r)
-    if err != nil {
-      if isAWSErr(err, wafv2.ErrCodeWAFUnavailableEntityException, "") {
-        return resource.RetryableError(err)
-      }
-      return resource.NonRetryableError(err)
-    }
-    return nil
-  })
+	err := resource.Retry(webACLUpdateTimeout, func() *resource.RetryError {
+		_, err := conn.UpdateWebACL(r)
+		if err != nil {
+			if isAWSErr(err, wafv2.ErrCodeWAFUnavailableEntityException, "") {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 
-  if isResourceTimeoutError(err) {
-    _, err = conn.UpdateWebACL(r)
-  }
+	if isResourceTimeoutError(err) {
+		_, err = conn.UpdateWebACL(r)
+	}
 
-  if tfawserr.ErrCodeEquals(err, wafv2.ErrCodeWAFUnavailableEntityException) {
-    return nil
-  }
+	if tfawserr.ErrCodeEquals(err, wafv2.ErrCodeWAFUnavailableEntityException) {
+		return nil
+	}
 
-  if err != nil {
-    return fmt.Errorf("Error deleting WAFv2 WebACL Rule: %w", err)
-  }
+	if err != nil {
+		return fmt.Errorf("Error deleting WAFv2 WebACL Rule: %w", err)
+	}
 
-  return nil
+	return nil
 }
 
 func webACLRootStatementSchema(level int) *schema.Schema {
@@ -903,20 +897,20 @@ func flattenExcludedRules(r []*wafv2.ExcludedRule) interface{} {
 }
 
 func resourceWebACLReadExistinAcl(params *wafv2.GetWebACLInput, meta interface{}) (*wafv2.GetWebACLOutput, error) {
-  conn := meta.(*AWSClient).wafv2conn
+	conn := meta.(*AWSClient).wafv2conn
 
-  resp, err := conn.GetWebACL(params)
-  if err != nil {
-    if isAWSErr(err, wafv2.ErrCodeWAFNonexistentItemException, "") {
-      log.Printf("[WARN] WAFv2 WebACL (%s) not found", *params.Id)
-      return resp, err
-    }
-    return resp, err
-  }
+	resp, err := conn.GetWebACL(params)
+	if err != nil {
+		if isAWSErr(err, wafv2.ErrCodeWAFNonexistentItemException, "") {
+			log.Printf("[WARN] WAFv2 WebACL (%s) not found", *params.Id)
+			return resp, err
+		}
+		return resp, err
+	}
 
-  if resp == nil || resp.WebACL == nil {
-    return resp, fmt.Errorf("Error getting WAFv2 WebACL")
-  }
+	if resp == nil || resp.WebACL == nil {
+		return resp, fmt.Errorf("Error getting WAFv2 WebACL")
+	}
 
-  return resp, nil
+	return resp, nil
 }
