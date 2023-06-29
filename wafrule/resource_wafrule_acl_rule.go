@@ -20,7 +20,6 @@ const (
 	webACLCreateTimeout            = 5 * time.Minute
 	webACLUpdateTimeout            = 5 * time.Minute
 	webACLDeleteTimeout            = 5 * time.Minute
-	Scope                          = "REGIONAL"
 	webACLRootStatementSchemaLevel = 3
 )
 
@@ -132,6 +131,12 @@ func resourceAwsWafv2Rules() *schema.Resource {
 					},
 				},
 			},
+			"scope": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice(wafv2.Scope_Values(), false),
+			},
 		},
 	}
 }
@@ -143,7 +148,7 @@ func resourceWebAclRulesCreate(d *schema.ResourceData, meta interface{}) error {
 	wafAclInfo := &wafv2.GetWebACLInput{
 		Id:    aws.String(d.Get("waf_acl_id").(string)),
 		Name:  aws.String(d.Get("waf_acl_name").(string)),
-		Scope: aws.String(Scope),
+		Scope: aws.String(d.Get("scope").(string)),
 	}
 	webAcl, getAclError := resourceWebACLReadExistinAcl(wafAclInfo, meta)
 	if getAclError != nil {
@@ -153,7 +158,7 @@ func resourceWebAclRulesCreate(d *schema.ResourceData, meta interface{}) error {
 	params := &wafv2.UpdateWebACLInput{
 		Id:               aws.String(d.Get("waf_acl_id").(string)),
 		Name:             aws.String(d.Get("waf_acl_name").(string)),
-		Scope:            aws.String(Scope),
+		Scope:            aws.String(d.Get("scope").(string)),
 		Rules:            expandWebACLRules(d.Get("rule").(*schema.Set).List()),
 		VisibilityConfig: webAcl.WebACL.VisibilityConfig,
 		DefaultAction:    webAcl.WebACL.DefaultAction,
@@ -199,7 +204,7 @@ func resourceWebACLRulesRead(d *schema.ResourceData, meta interface{}) error {
 	params := &wafv2.GetWebACLInput{
 		Id:    aws.String(d.Get("waf_acl_id").(string)),
 		Name:  aws.String(d.Get("waf_acl_name").(string)),
-		Scope: aws.String(Scope),
+		Scope: aws.String(d.Get("scope").(string)),
 	}
 
 	resp, err := conn.GetWebACL(params)
@@ -239,7 +244,7 @@ func resourceWebACLRulesUpdate(d *schema.ResourceData, meta interface{}) error {
 		u := &wafv2.UpdateWebACLInput{
 			Id:               aws.String(d.Get("waf_acl_id").(string)),
 			Name:             aws.String(d.Get("waf_acl_name").(string)),
-			Scope:            aws.String(Scope),
+			Scope:            aws.String(d.Get("scope").(string)),
 			LockToken:        aws.String(d.Get("lock_token").(string)),
 			DefaultAction:    expandDefaultAction(d.Get("waf_acl_default_action").([]interface{})),
 			Rules:            expandWebACLRules(d.Get("rule").(*schema.Set).List()),
@@ -280,7 +285,7 @@ func resourceWebACLRulesDelete(d *schema.ResourceData, meta interface{}) error {
 	r := &wafv2.UpdateWebACLInput{
 		Id:               aws.String(d.Get("waf_acl_id").(string)),
 		Name:             aws.String(d.Get("waf_acl_name").(string)),
-		Scope:            aws.String(Scope),
+		Scope:            aws.String(d.Get("scope").(string)),
 		LockToken:        aws.String(d.Get("lock_token").(string)),
 		DefaultAction:    expandDefaultAction(d.Get("waf_acl_default_action").([]interface{})),
 		Rules:            make([]*wafv2.Rule, 0),
