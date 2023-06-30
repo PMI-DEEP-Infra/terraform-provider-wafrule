@@ -133,7 +133,8 @@ func resourceAwsWafv2Rules() *schema.Resource {
 			},
 			"scope": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
+				Default:      "REGIONAL",
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice(wafv2.Scope_Values(), false),
 			},
