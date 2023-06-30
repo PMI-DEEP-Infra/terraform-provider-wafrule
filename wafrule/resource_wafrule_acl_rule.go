@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 	"time"
+	"context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/wafv2"
@@ -24,11 +25,27 @@ const (
 )
 
 func resourceAwsWafv2Rules() *schema.Resource {
+	resourceV0 := &schema.Resource{Schema: map[string]*schema.Schema{}}
+
 	return &schema.Resource{
 		Create: resourceWebAclRulesCreate,
 		Read:   resourceWebACLRulesRead,
 		Update: resourceWebACLRulesUpdate,
 		Delete: resourceWebACLRulesDelete,
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type: resourceV0.CoreConfigSchema().ImpliedType(),
+				Upgrade: func(_ context.Context, rawState map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+					if v, ok := rawState["scope"]; !ok || v == nil {
+						rawState["scope"] = "REGIONAL"
+					}
+
+					return rawState, nil
+				},
+				Version: 0,
+			},
+		},
 
 		Schema: map[string]*schema.Schema{
 			"waf_acl_name": {
