@@ -23,6 +23,7 @@ this defaults to ~/.aws/credentials.
 - **skip_metadata_api_check** (Boolean)
 - **skip_region_validation** (Boolean) Skip static validation of region name. Used by users of alternative AWS-like APIs or users w/ access to regions that are not public (yet).
 - **skip_requesting_account_id** (Boolean) Skip requesting the account ID. Used for AWS API implementations that do not have IAM/STS API and/or metadata API.
+- **scope** - (Optional) Specifies whether this is for an AWS CloudFront distribution or for a regional application. Valid values are CLOUDFRONT or REGIONAL(default). To work with CloudFront, you must also specify the region us-east-1 (N. Virginia) on the AWS provider.
 - **token** (String) session token. A session token is only required if you are
 using temporary security credentials.
 
