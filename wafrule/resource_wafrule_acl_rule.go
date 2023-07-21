@@ -1,11 +1,11 @@
 package wafrule
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
 	"time"
-	"context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/wafv2"
@@ -28,10 +28,10 @@ func resourceAwsWafv2Rules() *schema.Resource {
 	resourceV0 := &schema.Resource{Schema: map[string]*schema.Schema{}}
 
 	return &schema.Resource{
-		Create: resourceWebAclRulesCreate,
-		Read:   resourceWebACLRulesRead,
-		Update: resourceWebACLRulesUpdate,
-		Delete: resourceWebACLRulesDelete,
+		Create:        resourceWebAclRulesCreate,
+		Read:          resourceWebACLRulesRead,
+		Update:        resourceWebACLRulesUpdate,
+		Delete:        resourceWebACLRulesDelete,
 		SchemaVersion: 1,
 		StateUpgraders: []schema.StateUpgrader{
 			{
@@ -226,12 +226,15 @@ func resourceWebACLRulesRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	resp, err := conn.GetWebACL(params)
+
+	if !d.IsNewResource() && isAWSErr(err, wafv2.ErrCodeWAFNonexistentItemException, "") {
+		log.Printf("[WARN] WAFv2 WebACL (%s) not found for rule, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
-		if isAWSErr(err, wafv2.ErrCodeWAFNonexistentItemException, "") {
-			log.Printf("[WARN] WAFv2 WebACL (%s) not found for rule", d.Id())
-			return err
-		}
-		return err
+		return fmt.Errorf("reading WAFv2 WebACL rule (%s): %s", d.Id(), err)
 	}
 
 	if resp == nil || resp.WebACL == nil {
